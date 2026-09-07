@@ -12,7 +12,7 @@ repository's releases page; CHANGELOG.md beside this file has the same notes.
 
 ## Install
 
-1. Sign in at https://gtaservers.org/owners and add your server. You get a
+1. Sign in at https://gtaservers.org/developer and add your server. You get a
    token and the two lines below.
 2. Unzip this folder to `resources/gtaservers/`.
 3. Add to `server.cfg`, in either order:

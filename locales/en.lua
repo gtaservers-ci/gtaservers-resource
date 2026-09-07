@@ -15,14 +15,14 @@ Locales['en'] = {
   forcevote_done = 'Forced a vote reward for %s (id %s).',
 
   -- console
-  start_no_token = '[gtaservers] No token set. Add your server at https://gtaservers.org/owners, then put `set gtaservers_token "gs_..."` in server.cfg.',
+  start_no_token = '[gtaservers] No token set. Add your server at https://gtaservers.org/developer, then put `set gtaservers_token "gs_..."` in server.cfg.',
   start_bad_token = '[gtaservers] The gtaservers_token convar does not look like a token (gs_xxxxxxxx_...). Copy it again from your dashboard.',
   start_waiting = '[gtaservers] Waiting for the FiveM server list to show this server with the token (usually under three minutes).',
   start_offline = '[gtaservers] This server is not in the FiveM server list right now; the token verifies once it appears.',
   start_wrong_listing = '[gtaservers] The token is running on a different listing than the one it was issued for. Add this server on your dashboard to get its own.',
   start_frozen = '[gtaservers] The listing is frozen on gtaservers.org; no transfer can complete.',
   start_linked = '[gtaservers] Linked to gtaservers.org as "%s". Rewards are on.',
-  start_revoked = '[gtaservers] The token was revoked. Get a new one from https://gtaservers.org/owners and put it in server.cfg.',
+  start_revoked = '[gtaservers] The token was revoked. Get a new one from https://gtaservers.org/developer and put it in server.cfg.',
   start_not_ready = '[gtaservers] gtaservers.org is not accepting tokens yet. Retrying.',
   update_available = '[gtaservers] Version %s is available (you run %s): https://github.com/gtaservers-ci/gtaservers-resource/releases',
   reward_failed = '[gtaservers] Reward %s failed for %s: %s',

@@ -5,6 +5,12 @@ entry's version must match `version` in fxmanifest.lua: CI fails the pull
 request if they drift, because a change that ships without a bump never
 reaches anybody (the site's "update available" notice compares the two).
 
+## 1.0.2 - 2026-09-07
+
+- The console notices, the README and the manifest link to
+  `gtaservers.org/developer`. The owner area moved there from `/owners` and
+  `/server-owners`, which only still work as redirects.
+
 ## 1.0.1 - 2026-09-07
 
 - The "update available" console notice links to the releases page on GitHub.
