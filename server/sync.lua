@@ -121,21 +121,31 @@ function Sync.tick()
   local batch = joined
   joined = {}
 
+  -- A `config` block each way: what this resource is going out, what the site
+  -- wants it to know coming back.
   Api.post('/api/resource/sync', {
-    version = VERSION,
-    reward = Config.RewardDescription,
-    players = #GetPlayers(),
-    framework = Rewards.framework(),
+    config = {
+      version = VERSION,
+      reward = Config.RewardDescription,
+      players = #GetPlayers(),
+      framework = Rewards.framework(),
+    },
     joined = batch,
   }, function(status, data)
     inFlight = false
 
+    -- A 200 is the answer to "are we yours": the site refuses the route with
+    -- 403 not_verified, and its reason, until the listing is claimed.
     if status ~= 200 then
       for _, id in ipairs(batch) do joined[#joined + 1] = id end
       local code = Api.errorCode(data)
       if code == 'token_revoked' or code == 'bad_token' then
         State.verified = false
         printReason('revoked')
+      elseif code == 'not_verified' then
+        State.verified = false
+        State.reason = Api.errorReason(data)
+        printReason(State.reason)
       elseif code == 'not_ready' then
         printReason('not_ready')
       end
@@ -144,28 +154,25 @@ function Sync.tick()
 
     for _, id in ipairs(batch) do joinedSet[id] = nil end
     State.lastSyncAt = os.time()
-    State.server = data.server
-    State.latestVersion = data.latest_version
-    if type(data.poll_seconds) == 'number' and data.poll_seconds >= 5 then
-      pollSeconds = data.poll_seconds
+
+    local config = type(data.config) == 'table' and data.config or {}
+    State.server = config.server
+    State.latestVersion = config.latest_version
+    if type(config.poll_seconds) == 'number' and config.poll_seconds >= 5 then
+      pollSeconds = config.poll_seconds
     end
 
-    if data.latest_version and data.latest_version ~= VERSION and warnedVersion ~= data.latest_version then
-      warnedVersion = data.latest_version
-      print(L('update_available', data.latest_version, VERSION))
+    if config.latest_version and config.latest_version ~= VERSION and warnedVersion ~= config.latest_version then
+      warnedVersion = config.latest_version
+      print(L('update_available', config.latest_version, VERSION))
     end
 
     local wasVerified = State.verified
-    State.verified = data.verified == true
-    State.reason = data.reason
-    if State.verified then
-      if not wasVerified then
-        print(L('start_linked', (data.server and data.server.name) or ''))
-        lastReason = nil
-      end
-    else
-      printReason(data.reason)
-      return
+    State.verified = true
+    State.reason = nil
+    if not wasVerified then
+      print(L('start_linked', (config.server and config.server.name) or ''))
+      lastReason = nil
     end
 
     for _, vote in ipairs(data.votes or {}) do

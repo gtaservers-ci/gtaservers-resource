@@ -5,6 +5,17 @@ entry's version must match `version` in fxmanifest.lua: CI fails the pull
 request if they drift, because a change that ships without a bump never
 reaches anybody (the site's "update available" notice compares the two).
 
+## 1.0.3 - 2026-09-07
+
+- Fixes `/vote` answering "Voting is not set up on this server yet." on servers
+  that are verified, and rewards never paying with it. The site changed the
+  shape of its sync reply; the resource now reads it, treats a successful sync
+  as verified, and only reports the server as unverified when the site actually
+  says so (with the reason it gives).
+- The version, reward description, framework and player count a server reports
+  reach the site again, so the dashboard and the "update available" notice stop
+  showing every server as 0.0.0.
+
 ## 1.0.2 - 2026-09-07
 
 - The console notices, the README and the manifest link to

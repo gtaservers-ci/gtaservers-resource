@@ -41,3 +41,9 @@ end
 function Api.errorCode(data)
   return type(data) == 'table' and type(data.error) == 'table' and data.error.code or nil
 end
+
+--- Why a not_verified refusal was given: one of the reasons printReason knows
+--- (waiting_for_directory, server_offline, wrong_listing, frozen).
+function Api.errorReason(data)
+  return type(data) == 'table' and type(data.error) == 'table' and data.error.reason or nil
+end
