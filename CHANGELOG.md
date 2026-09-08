@@ -5,6 +5,13 @@ entry's version must match `version` in fxmanifest.lua: CI fails the pull
 request if they drift, because a change that ships without a bump never
 reaches anybody (the site's "update available" notice compares the two).
 
+## 1.0.5 - 2026-09-07
+
+- Code cleanup: tidier comments and doc annotations across the Lua. Nothing
+  behaves differently.
+- The locale lookup no longer shadows Lua's `table` library, which would have
+  broken any locale string added below it that used `table.concat`.
+
 ## 1.0.4 - 2026-09-07
 
 - A server that cannot reach gtaservers.org now says so in the console. Until

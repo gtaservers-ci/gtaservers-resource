@@ -1,12 +1,12 @@
 --- Paying a vote: every entry in Config.Rewards through the adapter for the
 --- framework that is running, then any milestone the player's lifetime count
---- hits, then the announcement, the webhook and the event other scripts can
---- listen for. One pipeline for real votes and for /forcevote.
+--- hits, then the announcement, the webhook and the gtaservers:vote event.
 Rewards = {}
 
 local framework = 'none'
 local ESX, QBCore
 
+---@return string 'esx', 'qb', 'qbx' or 'none'
 function Rewards.detect()
   if GetResourceState('es_extended') == 'started' then
     local ok, shared = pcall(function()
@@ -30,6 +30,7 @@ function Rewards.detect()
   return framework
 end
 
+---@return string
 function Rewards.framework()
   return framework
 end
@@ -74,6 +75,7 @@ local item = {
   end,
 }
 
+--- Replaces {id}, {name}, {identifier}, {votes} and {reward} in config strings.
 local function substitute(template, ctx)
   return (tostring(template):gsub('{(%w+)}', function(key)
     local value = ctx[key]
@@ -120,7 +122,8 @@ local function webhook(text)
   })
 end
 
---- vote: { id, identifier, name, voted_at, total_votes, forced, note }
+---@param src number
+---@param vote { id: number, identifier: string, name: string, voted_at: number, total_votes: number, forced: boolean?, note: string? }
 function Rewards.pay(src, vote)
   local name = vote.name or GetPlayerName(src) or 'player'
   local ctx = {

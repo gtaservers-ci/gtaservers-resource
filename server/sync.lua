@@ -1,9 +1,6 @@
---- The loop: every poll_seconds (30 at rest, 5 for two minutes after anyone
---- types /vote, and at once when someone joins) ask gtaservers.org for the
---- unrewarded votes, pay the players who are online, and claim what was paid.
---- The site holds the only copy of the state; the one thing kept here is the
---- handful of vote ids paid but not yet acknowledged, so a crash in that gap
---- re-sends the claim instead of paying twice.
+--- The poll loop: every pollSeconds (5 for two minutes after a /vote, and at
+--- once when a player joins) ask gtaservers.org for unrewarded votes, pay the
+--- players who are online, and claim what was paid.
 Sync = {}
 
 State = {
@@ -17,9 +14,8 @@ State = {
 local KVP_PENDING = 'gtaservers:pending_claim'
 local HOT_SECONDS = 120
 local HOT_INTERVAL = 5
---- How long a sync may be in flight before another is allowed. A callback
---- that never fires would otherwise hold the loop shut for the life of the
---- server, silently.
+--- How long a sync may be in flight before another is allowed, so a callback
+--- that never fires cannot hold the loop shut for the life of the server.
 local STUCK_SECONDS = 60
 
 local online = {}      -- identifier -> server id
@@ -35,10 +31,9 @@ local lastReason = nil
 local lastFailure = nil
 local warnedVersion = nil
 
---- The saved list is a safety net, not the state: if the KVP store cannot be
---- read (it has behaved differently between server builds), carrying on with
---- an empty list costs at worst a second payment of a vote paid seconds
---- before the last restart. Failing here used to take the sync loop with it.
+--- The saved list is a safety net against paying a vote twice across a
+--- restart, not the state: gtaservers.org holds that. An unreadable store
+--- costs at worst one double payment, so it must never stop the loop.
 local function loadPending()
   local raw = GetResourceKvpString(KVP_PENDING)
   if raw and raw ~= '' then
@@ -96,16 +91,18 @@ local function claim()
   end)
 end
 
---- Called after a /vote: poll fast for a couple of minutes so the reward
---- lands seconds after the vote does.
+--- Poll fast for a couple of minutes, so a reward lands seconds after a vote.
 function Sync.expectVote()
   hotUntil = os.time() + HOT_SECONDS
 end
 
+---@return table<string, number> identifier -> server id
 function Sync.online()
   return online
 end
 
+--- Printed once and again only when it changes, to keep a stuck server from
+--- writing a console line every poll forever.
 local function printReason(reason)
   if reason == lastReason then return end
   lastReason = reason
@@ -124,10 +121,8 @@ local function printReason(reason)
   end
 end
 
---- A failure printReason has no reason for: the request never arrived, or the
---- site answered something unexpected. Printed once and then only when it
---- changes, so a server that cannot reach us says so without writing a line
---- every poll forever.
+--- A failure with no reason behind it: the request never arrived, or the site
+--- answered something unexpected. Deduplicated like printReason.
 local function printFailure(key, ...)
   if lastFailure == key then return end
   lastFailure = key
@@ -143,8 +138,6 @@ function Sync.tick()
   local batch = joined
   joined = {}
 
-  -- A `config` block each way: what this resource is going out, what the site
-  -- wants it to know coming back.
   Api.post('/api/resource/sync', {
     config = {
       version = VERSION,
@@ -156,8 +149,8 @@ function Sync.tick()
   }, function(status, data)
     inFlight = false
 
-    -- A 200 is the answer to "are we yours": the site refuses the route with
-    -- 403 not_verified, and its reason, until the listing is claimed.
+    -- Anything but a 200 means no votes: the site refuses the route with 403
+    -- not_verified, and a reason, until the listing is claimed.
     if status ~= 200 then
       for _, id in ipairs(batch) do joined[#joined + 1] = id end
       local code = Api.errorCode(data)
@@ -171,8 +164,8 @@ function Sync.tick()
       elseif code == 'not_ready' then
         printReason('not_ready')
       elseif status == 0 then
-        -- Nothing answered: DNS, TLS or an outbound firewall on the game
-        -- server. Nothing on the site's side ever sees this request.
+        -- DNS, TLS or an outbound firewall on the game server: the site never
+        -- saw the request.
         printFailure('sync_unreachable', Api.base())
       elseif status ~= 429 then
         printFailure('sync_failed', tostring(status))
@@ -228,7 +221,7 @@ AddEventHandler('playerJoining', function()
     joinedSet[identifier] = true
     joined[#joined + 1] = identifier
   end
-  -- Pay a vote they cast while away within seconds of loading in.
+  -- Pay a vote cast while away within seconds of loading in.
   SetTimeout(3000, Sync.tick)
 end)
 

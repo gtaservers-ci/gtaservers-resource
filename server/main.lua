@@ -1,8 +1,8 @@
---- Start-up, the player identity, and the two commands.
+--- Start-up, player identity and the two commands.
 
---- The identifier a player votes as. One function for minting the link and
---- matching the paid vote, so whatever Config.Identifier says stays
---- consistent end to end.
+--- The identifier a player votes as, from Config.Identifier.
+---@param src number
+---@return string?
 function PlayerIdentity(src)
   local kind = Config.Identifier or 'license'
   if type(kind) == 'function' then
@@ -15,10 +15,14 @@ function PlayerIdentity(src)
     or GetPlayerIdentifierByType(src, 'discord')
 end
 
+---@param src number
+---@param message string
 function Notify(src, message)
   TriggerClientEvent('gtaservers:notify', src, message)
 end
 
+---@param untilAt number? unix time
+---@return string
 local function countdown(untilAt)
   local seconds = math.max(0, (tonumber(untilAt) or 0) - os.time())
   local hours = math.floor(seconds / 3600)
@@ -45,9 +49,8 @@ CreateThread(function()
     return
   end
 
-  -- The public half of the token, in the server's public vars: what the
-  -- FiveM directory shows and what gtaservers.org reads back to verify the
-  -- listing. It contains none of the secret half.
+  -- Announced in the FiveM server list, where gtaservers.org reads it back to
+  -- verify the listing. It holds none of the secret half of the token.
   SetConvarServerInfo('gtaservers', public)
 
   Rewards.detect()

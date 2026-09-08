@@ -7,11 +7,11 @@ Config.Command = 'vote'
 -- it). The link is also printed in chat, for players who decline.
 Config.OpenBrowser = true
 
--- How players are identified. 'license' is the Rockstar account: present for
--- everyone, the same on every server and on both Legacy and Enhanced, and
--- what ESX, QBCore and Qbox key their player tables on. 'license2', 'fivem',
--- 'discord' and 'steam' also work; or give a function(source) that returns
--- your own id as a string.
+-- How players are identified. 'license' is the Rockstar account: everyone has
+-- one, it is the same on every server and on both Legacy and Enhanced, and it
+-- is what ESX, QBCore and Qbox key their player tables on. 'license2',
+-- 'fivem', 'discord' and 'steam' also work, as does a function(source)
+-- returning your own id as a string.
 Config.Identifier = 'license'
 
 -- Shown on your gtaservers.org listing: "Vote and get $5,000 cash in-game".

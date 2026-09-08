@@ -33,12 +33,13 @@ Locales['en'] = {
   forced = '[gtaservers] Forced reward for %s (%s) by %s%s',
 }
 
---- Looks a string up in the configured locale, falling back to English, and
---- formats it with the arguments given.
+--- Looks a string up in Config.Locale, falls back to English, and formats it.
+---@param key string
+---@return string
 function L(key, ...)
   local locale = (Config and Config.Locale) or 'en'
-  local table = Locales[locale] or Locales['en']
-  local text = table[key] or Locales['en'][key] or key
+  local strings = Locales[locale] or Locales['en']
+  local text = strings[key] or Locales['en'][key] or key
   if select('#', ...) > 0 then
     return string.format(text, ...)
   end

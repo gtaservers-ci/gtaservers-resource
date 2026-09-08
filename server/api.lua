@@ -1,26 +1,30 @@
---- The one way this resource talks to gtaservers.org: POST JSON with the
---- server token as a bearer, get JSON back. Three routes exist and nothing
---- else calls them (docs/server-owner-design.html in the site's repo).
+--- HTTP to gtaservers.org. POST JSON with the server token as a bearer, get
+--- JSON back.
 Api = {}
 
 local BASE = GetConvar('gtaservers_api', 'https://gtaservers.org')
 VERSION = GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or '0.0.0'
 
+---@return string
 function Api.base()
   return BASE
 end
 
+---@return string
 function Api.token()
   return GetConvar('gtaservers_token', '')
 end
 
---- The eight characters after `gs_`: what the server announces publicly.
+--- The eight characters after `gs_`, the half of the token the server
+--- announces publicly.
+---@return string?
 function Api.publicHalf()
   return Api.token():match('^gs_(%w%w%w%w%w%w%w%w)_%w+$')
 end
 
---- cb(status, data): status is 0 when the request never got an answer, and
---- data is the decoded body or an empty table.
+---@param path string
+---@param body table?
+---@param cb fun(status: number, data: table) status is 0 when nothing answered
 function Api.post(path, body, cb)
   PerformHttpRequest(BASE .. path, function(status, text)
     local data = {}
@@ -38,12 +42,15 @@ function Api.post(path, body, cb)
   })
 end
 
+---@param data table
+---@return string?
 function Api.errorCode(data)
   return type(data) == 'table' and type(data.error) == 'table' and data.error.code or nil
 end
 
---- Why a not_verified refusal was given: one of the reasons printReason knows
---- (waiting_for_directory, server_offline, wrong_listing, frozen).
+--- waiting_for_directory, server_offline, wrong_listing or frozen.
+---@param data table
+---@return string?
 function Api.errorReason(data)
   return type(data) == 'table' and type(data.error) == 'table' and data.error.reason or nil
 end
