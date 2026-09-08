@@ -17,6 +17,10 @@ State = {
 local KVP_PENDING = 'gtaservers:pending_claim'
 local HOT_SECONDS = 120
 local HOT_INTERVAL = 5
+--- How long a sync may be in flight before another is allowed. A callback
+--- that never fires would otherwise hold the loop shut for the life of the
+--- server, silently.
+local STUCK_SECONDS = 60
 
 local online = {}      -- identifier -> server id
 local joined = {}      -- identifiers that joined since the last successful sync
@@ -26,9 +30,15 @@ local pendingSet = {}
 local pollSeconds = 30
 local hotUntil = 0
 local inFlight = false
+local inFlightAt = 0
 local lastReason = nil
+local lastFailure = nil
 local warnedVersion = nil
 
+--- The saved list is a safety net, not the state: if the KVP store cannot be
+--- read (it has behaved differently between server builds), carrying on with
+--- an empty list costs at worst a second payment of a vote paid seconds
+--- before the last restart. Failing here used to take the sync loop with it.
 local function loadPending()
   local raw = GetResourceKvpString(KVP_PENDING)
   if raw and raw ~= '' then
@@ -114,9 +124,21 @@ local function printReason(reason)
   end
 end
 
+--- A failure printReason has no reason for: the request never arrived, or the
+--- site answered something unexpected. Printed once and then only when it
+--- changes, so a server that cannot reach us says so without writing a line
+--- every poll forever.
+local function printFailure(key, ...)
+  if lastFailure == key then return end
+  lastFailure = key
+  print(L(key, ...))
+end
+
 function Sync.tick()
-  if inFlight or Api.token() == '' then return end
+  if Api.token() == '' then return end
+  if inFlight and os.time() - inFlightAt < STUCK_SECONDS then return end
   inFlight = true
+  inFlightAt = os.time()
 
   local batch = joined
   joined = {}
@@ -148,12 +170,19 @@ function Sync.tick()
         printReason(State.reason)
       elseif code == 'not_ready' then
         printReason('not_ready')
+      elseif status == 0 then
+        -- Nothing answered: DNS, TLS or an outbound firewall on the game
+        -- server. Nothing on the site's side ever sees this request.
+        printFailure('sync_unreachable', Api.base())
+      elseif status ~= 429 then
+        printFailure('sync_failed', tostring(status))
       end
       return
     end
 
     for _, id in ipairs(batch) do joinedSet[id] = nil end
     State.lastSyncAt = os.time()
+    lastFailure = nil
 
     local config = type(data.config) == 'table' and data.config or {}
     State.server = config.server
@@ -213,7 +242,10 @@ AddEventHandler('playerDropped', function()
 end)
 
 function Sync.start()
-  loadPending()
+  local loaded, err = pcall(loadPending)
+  if not loaded then
+    print(L('pending_unreadable', tostring(err)))
+  end
   -- Players already connected when the resource (re)starts.
   for _, id in ipairs(GetPlayers()) do
     local src = tonumber(id)
