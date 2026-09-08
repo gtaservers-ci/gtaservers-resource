@@ -5,7 +5,7 @@ lua54 'yes'
 name 'gtaservers'
 description 'Vote rewards for your gtaservers.org listing: /vote opens the vote page, votes are paid in game.'
 author 'gtaservers.org'
-version '1.0.5'
+version '1.1.0'
 license 'MIT'
 url 'https://gtaservers.org/developer'
 

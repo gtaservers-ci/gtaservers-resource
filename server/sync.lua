@@ -17,12 +17,23 @@ local HOT_INTERVAL = 5
 --- How long a sync may be in flight before another is allowed, so a callback
 --- that never fires cannot hold the loop shut for the life of the server.
 local STUCK_SECONDS = 60
+--- What it takes to give up on paying a vote and claim it unpaid: this many
+--- failed polls, and this long since the first of them. A vote is left
+--- unclaimed while a framework starts or a joining player's character loads;
+--- past that it is a reward config the owner has to fix, and retrying for good
+--- would pay nobody while printing the same failure forever. The time matters
+--- as well as the count because polling runs every five seconds after a vote,
+--- which would otherwise spend every attempt inside a minute.
+local MAX_PAY_ATTEMPTS = 10
+local GIVE_UP_SECONDS = 300
 
 local online = {}      -- identifier -> server id
 local joined = {}      -- identifiers that joined since the last successful sync
 local joinedSet = {}
 local pending = {}     -- vote ids paid, not yet acknowledged by claim
 local pendingSet = {}
+local attempts = {}    -- vote id -> polls it has failed to pay on
+local paying = {}      -- vote ids inside Rewards.pay right now
 local pollSeconds = 30
 local hotUntil = 0
 local inFlight = false
@@ -152,7 +163,16 @@ function Sync.tick()
     -- Anything but a 200 means no votes: the site refuses the route with 403
     -- not_verified, and a reason, until the listing is claimed.
     if status ~= 200 then
-      for _, id in ipairs(batch) do joined[#joined + 1] = id end
+      -- Back into the queue, without duplicating an id a join added while
+      -- this request was out.
+      local queued = {}
+      for _, id in ipairs(joined) do queued[id] = true end
+      for _, id in ipairs(batch) do
+        if not queued[id] then
+          queued[id] = true
+          joined[#joined + 1] = id
+        end
+      end
       local code = Api.errorCode(data)
       if code == 'token_revoked' or code == 'bad_token' then
         State.verified = false
@@ -197,13 +217,29 @@ function Sync.tick()
       lastReason = nil
     end
 
+    -- A vote is claimed only once it is actually paid: a reward that did not
+    -- reach the player would otherwise be spent and gone.
     for _, vote in ipairs(data.votes or {}) do
       local src = online[vote.identifier]
-      if src and not pendingSet[vote.id] and GetPlayerName(src) then
-        markPending(vote.id)
-        local ok, err = pcall(Rewards.pay, src, vote)
+      if src and not pendingSet[vote.id] and not paying[vote.id] and GetPlayerName(src) then
+        paying[vote.id] = true
+        local ok, result = pcall(Rewards.pay, src, vote)
+        paying[vote.id] = nil
         if not ok then
-          print(L('reward_failed', 'vote ' .. tostring(vote.id), vote.name or vote.identifier, tostring(err)))
+          print(L('reward_failed', 'vote ' .. tostring(vote.id), vote.name or vote.identifier, tostring(result)))
+        end
+        if ok and result then
+          attempts[vote.id] = nil
+          markPending(vote.id)
+        else
+          local tried = attempts[vote.id] or { count = 0, since = os.time() }
+          tried.count = tried.count + 1
+          attempts[vote.id] = tried
+          if tried.count >= MAX_PAY_ATTEMPTS and os.time() - tried.since >= GIVE_UP_SECONDS then
+            print(L('reward_gave_up', tostring(vote.id), vote.name or vote.identifier, tostring(tried.count)))
+            attempts[vote.id] = nil
+            markPending(vote.id)
+          end
         end
       end
     end
@@ -224,6 +260,15 @@ AddEventHandler('playerJoining', function()
   -- Pay a vote cast while away within seconds of loading in.
   SetTimeout(3000, Sync.tick)
 end)
+
+-- The framework's player object exists from here, not from playerJoining, and
+-- a money or item reward needs it. Poll once a beat later so a vote cast while
+-- the player was away pays as they load in rather than waiting for the retry.
+for _, event in ipairs({ 'esx:playerLoaded', 'QBCore:Server:PlayerLoaded', 'qbx_core:server:playerLoaded' }) do
+  AddEventHandler(event, function()
+    SetTimeout(1000, Sync.tick)
+  end)
+end
 
 AddEventHandler('playerDropped', function()
   local src = source

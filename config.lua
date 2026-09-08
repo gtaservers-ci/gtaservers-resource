@@ -43,8 +43,22 @@ Config.Milestones = {
 -- description above. Set to '' to disable.
 Config.Announce = '{name} just voted for the server. Type /vote for {reward}!'
 
--- A Discord webhook that gets one line per reward. Leave empty for none.
+-- A Discord webhook that gets one line per reward. Leave empty for none. It
+-- posts to your own Discord; gtaservers.org never sees it.
 Config.DiscordWebhook = ''
+
+-- Whether that webhook line also carries the player's identifier, e.g.
+-- license:8f2a... Off by default: it is a permanent id for a real person, and
+-- a staff channel is rarely the place for one. Turn it on if you need to match
+-- a reward to an account.
+Config.WebhookIdentifier = false
+
+-- Where a message to a player goes. Chat by default. Point it at your own
+-- notification system to use that instead:
+--   Config.Notify = function(source, message)
+--     TriggerClientEvent('myserver:notify', source, message)
+--   end
+Config.Notify = nil
 
 -- The ace that allows /forcevote in game (the server console can always use
 -- it): add_ace group.admin gtaservers.admin allow

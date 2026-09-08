@@ -6,7 +6,10 @@ window.addEventListener("message", function (event) {
     return;
   }
   // Only gtaservers.org (and a local copy of the site, for development).
-  if (!/^https:\/\/gtaservers\.org\//.test(data.url) && !/^http:\/\/127\.0\.0\.1:\d+\//.test(data.url)) {
+  if (
+    !/^https:\/\/gtaservers\.org\//.test(data.url) &&
+    !/^http:\/\/(127\.0\.0\.1|localhost):\d+\//.test(data.url)
+  ) {
     return;
   }
   if (typeof window.invokeNative === "function") {

@@ -53,6 +53,9 @@ Config.Rewards = {
 }
 
 Config.Milestones = { [10] = { { type = 'command', run = 'announce {name} has voted 10 times!' } } }
+
+Config.Notify = function(source, message) end   -- your notification system, instead of chat
+Config.WebhookIdentifier = false                -- put license:... in the Discord line too
 ```
 
 Other scripts can listen for `gtaservers:vote` (`source, vote`), which fires
@@ -64,8 +67,10 @@ The resource announces the public half of your token as a server-info var.
 gtaservers.org reads it back from the FiveM directory on the listing the
 token was issued for, and that is what proves the server is yours. Every 30
 seconds (5 seconds for two minutes after a `/vote`, and at once when a player
-joins) it asks gtaservers.org for the votes that have not been rewarded, pays
-the ones whose player is online, and reports them paid. A vote cast while a
+joins or their character loads) it asks gtaservers.org for the votes that have
+not been rewarded, pays the ones whose player is online, and reports them paid.
+A vote whose reward could not be given is left unpaid and tried again on the
+next polls, so nothing is spent without reaching the player. A vote cast while a
 player was away, or for a server they have never joined, is paid when they
 join, for up to 30 days. Nothing is stored here but the token in your
 `server.cfg` and, briefly, the ids of votes paid but not yet reported.

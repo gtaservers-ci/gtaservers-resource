@@ -5,6 +5,32 @@ entry's version must match `version` in fxmanifest.lua: CI fails the pull
 request if they drift, because a change that ships without a bump never
 reaches anybody (the site's "update available" notice compares the two).
 
+## 1.1.0 - 2026-09-07
+
+- A vote is no longer counted as paid when the reward did not actually reach
+  the player. Until now a reward that could not be given (no framework running,
+  or a player whose character had not loaded yet) was still reported paid: the
+  player was thanked, and the vote was spent with nothing to show for it. Such
+  a vote is now retried on the following polls, and only given up on (with a
+  console line naming it) after ten of them.
+- Votes cast while a player was away are paid as their character loads, rather
+  than a few seconds after they connect, which was usually too early for ESX,
+  QBCore or Qbox to have a player to pay.
+- The framework is looked for again while none has been found, instead of only
+  once at start-up. A server that started this resource before es_extended
+  would otherwise never pay a money or item reward.
+- Player names are stripped of quotes, semicolons and angle brackets before
+  they go into a `command` reward or the announcement, so a name cannot add
+  arguments to a console command or markup to the chat box.
+- `/vote` is limited to once every ten seconds per player, and now shows up in
+  the chat suggestion list.
+- New `Config.Notify`: hand player-facing messages to your own notification
+  system instead of chat.
+- New `Config.WebhookIdentifier`, off by default: the Discord webhook line no
+  longer carries the player's `license:...` identifier unless you ask for it.
+  Webhook posts also no longer resolve mentions, so a player cannot name
+  themselves `@everyone` and ping your staff channel.
+
 ## 1.0.5 - 2026-09-07
 
 - Code cleanup: tidier comments and doc annotations across the Lua. Nothing

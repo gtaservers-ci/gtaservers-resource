@@ -5,6 +5,8 @@ Locales['en'] = {
   vote_link = 'Vote for this server: %s',
   vote_opened = 'Opening the vote page in your browser. If nothing opens, use the link above.',
   already_voted = 'You have already voted. You can vote again in %s.',
+  vote_slow_down = 'Give it a moment before typing /vote again.',
+  suggestion_vote = 'Vote for this server and get a reward',
   not_set_up = 'Voting is not set up on this server yet.',
   vote_unavailable = 'Voting is unavailable right now. Try again in a minute.',
   reward_paid = 'Thanks for voting! You received %s.',
@@ -29,6 +31,7 @@ Locales['en'] = {
   pending_unreadable = '[gtaservers] Could not read the saved claim list (%s). Carrying on without it (at worst a vote paid just before the last restart is paid twice).',
   update_available = '[gtaservers] Version %s is available (you run %s): https://github.com/gtaservers-ci/gtaservers-resource/releases',
   reward_failed = '[gtaservers] Reward %s failed for %s: %s',
+  reward_gave_up = '[gtaservers] Vote %s for %s could not be paid in %s tries and will not be paid; check Config.Rewards.',
   no_framework_for = '[gtaservers] No framework found for a %s reward; use a command reward or install ESX, QBCore or Qbox.',
   forced = '[gtaservers] Forced reward for %s (%s) by %s%s',
 }
